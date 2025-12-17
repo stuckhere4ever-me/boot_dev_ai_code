@@ -4,6 +4,8 @@ import sys
 
 from google.genai import types
 
+import config
+
 schema_run_python_file = types.FunctionDeclaration(
     name="run_python_file",
     description="Run a python program based at file_path.  It will only work if the file ends in .py.  It can be passed a list of arguments.",
@@ -44,7 +46,7 @@ def run_python_file(working_directory, file_path, args=None):
                 args = [args]
             command.extend(args)
     
-        result = subprocess.run(command, capture_output=True, text=True, timeout=30, cwd=str(base))
+        result = subprocess.run(command, capture_output=True, text=True, timeout=config.TIMEOUT, cwd=str(base))
         
         return_string_lines= []
 

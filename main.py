@@ -44,27 +44,31 @@ from google.genai import types
 #######################
 
 from prompts import system_prompt
-from functions.get_files_info import schema_get_files_info, get_files_info
-from functions.get_file_content import schema_get_file_content, get_file_content
-from functions.run_python_file import schema_run_python_file, run_python_file
-from functions.write_file import schema_write_file, write_file
+# from functions.get_files_info import schema_get_files_info, get_files_info
+# from functions.get_file_content import schema_get_file_content, get_file_content
+# from functions.run_python_file import schema_run_python_file, run_python_file
+# from functions.write_file import schema_write_file, write_file
+import config
+import tool_registry
 
 ### Dictionary - my_funcs
 ### These are the functions that are available to us to send to Gemini
 
-my_funcs = {
-    "get_files_info": get_files_info,
-    "get_file_content": get_file_content,
-    "run_python_file": run_python_file,
-    "write_file": write_file,
-}
+# my_funcs = {
+#     "get_files_info": get_files_info,
+#     "get_file_content": get_file_content,
+#     "run_python_file": run_python_file,
+#     "write_file": write_file,
+# }
+
+my_funcs = tool_registry.dispatch()
 
 ### Function - build_client ###
 ### This function sets up the enviornment and returns a client.
 
 def build_client():
     load_dotenv()
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get(config.API_KEY_LOCATION)
     if api_key is None:
         raise RuntimeError("-- API Key Not Found --")
 
@@ -78,7 +82,7 @@ def build_client():
 def call_function(function_call_part, verbose=False):
     function_name = function_call_part.name
     function_args = copy.deepcopy(function_call_part.args)
-    working_dir = "./calculator"
+
 
     # This will return a response that basically says you gave me something you weren't supposed to
     if function_name not in my_funcs:
@@ -94,7 +98,7 @@ def call_function(function_call_part, verbose=False):
 
     # func_to_run is a function based on what is returned by the LLM.  We need to give it a working directory.  I used the deepcopy just in case function_call_part.args had weird behavior
     func_to_run = my_funcs[function_name]
-    function_args['working_directory'] = working_dir
+    function_args['working_directory'] = config.WORKING_DIR
     function_result = func_to_run(**function_args)
 
 
@@ -134,19 +138,22 @@ def main():
     messages = [types.Content(role="user", parts=[types.Part(text=prompt)])]
 
     available_functions = types.Tool(
-    function_declarations=[schema_get_files_info, schema_get_file_content, schema_run_python_file, schema_write_file],
+    function_declarations=tool_registry.declarations(),
     )
 
     llm_config=types.GenerateContentConfig(
         tools=[available_functions], system_instruction=system_prompt)
     
-    
+    if args.verbose:
+        print(f"User prompt: {prompt}")
+        print(f"Prompt tokens: {prompt_tokens}")
+        print(f"Response tokens: {response_tokens}")
 
-    for _ in range (20):
+    for _ in range (config.MAX_ITERATIONS):
     
         response_list = []
         response = client.models.generate_content(
-            model='gemini-2.5-flash', 
+            model=config.MODEL, 
             contents=messages,
             config=llm_config,
         )
@@ -164,10 +171,7 @@ def main():
 
         # I am certain I can use a decorator to add a logger of sorts that will only log if verbose is set.
         # Maybe I can build out a log that drops into a json file when i'm done, similar to what they did for asteroids
-        if args.verbose:
-            print(f"User prompt: {prompt}")
-            print(f"Prompt tokens: {prompt_tokens}")
-            print(f"Response tokens: {response_tokens}")
+
     
         if response.function_calls:
             for function_call_part in response.function_calls:
@@ -185,6 +189,7 @@ def main():
 
         elif response.text:
             print (response.text)
+            break
 
         else:
             break

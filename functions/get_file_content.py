@@ -1,7 +1,8 @@
 from pathlib import Path
 from google.genai import types
+import config
 
-MAX_CHARS = 10000
+
 
 schema_get_file_content = types.FunctionDeclaration(
     name="get_file_content",
@@ -30,10 +31,10 @@ def get_file_content(working_directory, file_path):
             return f'Error: File not found or is not a regular file: "{file_path}"'
 
         with open(target, "r", encoding="utf-8", errors="replace") as f:
-            file_content_string = f.read(MAX_CHARS + 1)
-            # After reading the first MAX_CHARS...
-            if len(file_content_string) > MAX_CHARS:
-                file_content_string = file_content_string[:MAX_CHARS] + f'[...File "{file_path}" truncated at {MAX_CHARS} characters]'
+            file_content_string = f.read(config.MAX_CHARS + 1)
+            # After reading the first config.MAX_CHARS...
+            if len(file_content_string) > config.MAX_CHARS:
+                file_content_string = file_content_string[:config.MAX_CHARS] + f'[...File "{file_path}" truncated at {config.MAX_CHARS} characters]'
     
     except Exception as e:
         return f"Error: {e}"
