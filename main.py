@@ -16,30 +16,41 @@
 # All filenames, function names, variable names (except constants) are in snake_case
 #######################
 
-######  IMPORTS #######
+###### IMPORTS #######
+# All of these are external modules
 # os - for all OS level commands like file paths and enviornments
+# copy - for dictionary deepcopy
+# argparse - lets me take command line arguments
 # dotenv - lets me set isolated .env files for just this project
 # genai - The gemini library
 # types - allows me to utilize the Content type as a message to the LLM
+#
 #######################
-
-
 
 import os
 import copy  
+import argparse
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-import argparse
+
+###### IMPORTS #######
+# All of these are custom built modules
+# prompts - contains my system prompt
+# get_files_info - contains the functions that will list directory information
+# get_file_content - contains the functions that get file content
+# run_python_files - contains the functions run python files
+# write_files - contains the functions that write files to the filesystem
+#######################
+
 from prompts import system_prompt
 from functions.get_files_info import schema_get_files_info, get_files_info
 from functions.get_file_content import schema_get_file_content, get_file_content
 from functions.run_python_file import schema_run_python_file, run_python_file
 from functions.write_file import schema_write_file, write_file
 
-### Function - build_client ###
-### This function sets up the enviornment and returns a client.
-### I will eventually put a docstring in here
+### Dictionary - my_funcs
+### These are the functions that are available to us to send to Gemini
 
 my_funcs = {
     "get_files_info": get_files_info,
@@ -47,6 +58,9 @@ my_funcs = {
     "run_python_file": run_python_file,
     "write_file": write_file,
 }
+
+### Function - build_client ###
+### This function sets up the enviornment and returns a client.
 
 def build_client():
     load_dotenv()
@@ -57,14 +71,16 @@ def build_client():
     client = genai.Client(api_key=api_key)
     return client
 
-### Main ###
-# Program entry point #
+
+### Function - call_function ###
+### This function will act as a worker and take the information that is provided by the gemini response and use it to call the requested functions
 
 def call_function(function_call_part, verbose=False):
     function_name = function_call_part.name
     function_args = copy.deepcopy(function_call_part.args)
     working_dir = "./calculator"
 
+    # This will return a response that basically says you gave me something you weren't supposed to
     if function_name not in my_funcs:
         return types.Content(
             role="tool",
@@ -76,6 +92,7 @@ def call_function(function_call_part, verbose=False):
             ],
         )
 
+    # func_to_run is a function based on what is returned by the LLM.  We need to give it a working directory.  I used the deepcopy just in case function_call_part.args had weird behavior
     func_to_run = my_funcs[function_name]
     function_args['working_directory'] = working_dir
     function_result = func_to_run(**function_args)
@@ -86,6 +103,7 @@ def call_function(function_call_part, verbose=False):
     else:
         print(f" - Calling function: {function_call_part.name}") 
 
+    # Return the response in a way I can give it back to the LLM 
     return types.Content(
         role="tool",
         parts=[
@@ -96,8 +114,9 @@ def call_function(function_call_part, verbose=False):
         ],
     )
 
-    # print(my_funcs[function_call_part.name](working_directory="calculator", **function_call_part.args))
 
+### Main ###
+# Program entry point #
 def main():
     
     # Gather all the arguments - This needs to turn into its own function later.
@@ -121,17 +140,16 @@ def main():
     llm_config=types.GenerateContentConfig(
         tools=[available_functions], system_instruction=system_prompt)
     
-    response_list = []
+    
 
     for _ in range (20):
     
+        response_list = []
         response = client.models.generate_content(
             model='gemini-2.5-flash', 
             contents=messages,
             config=llm_config,
         )
-    
-    
 
         metadata = response.usage_metadata
     
@@ -165,12 +183,10 @@ def main():
             
             messages.append(types.Content(role="user", parts=response_list))
 
-
         elif response.text:
             print (response.text)
 
         else:
-            # We are done! 
             break
 
 if __name__ == "__main__":
