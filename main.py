@@ -13,10 +13,11 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from prompts import system_prompt
+from typing import Any
 
 my_funcs = tool_registry.dispatch()
 
-def build_client():
+def build_client() -> genai.Client:
     '''
     requires env variable GEMINI_API_KEY
     Returns a client that can make Gemini calls
@@ -33,7 +34,7 @@ def build_client():
 
 
 
-def call_function(function_call_part, verbose=False):
+def call_function(function_call_part: Any, verbose: bool =False) -> types.Content:
     '''
     Function that takes an instruction from LLM and will execute it
     Constraint: We do not trust the model to detemrine working directory, so we inject it.
@@ -80,7 +81,7 @@ def call_function(function_call_part, verbose=False):
     )
 
 
-def main():
+def main() -> None:
     '''
     Run will send the user prompt to Gemini and complete actions based on LLM response
     Constraint: LLM will run no more than config.MAX_ITERATIONS times.

@@ -6,7 +6,7 @@ from pathlib import Path
 from google.genai import types
 
 
-schema_write_file = types.FunctionDeclaration(
+schema_write_file: types.FunctionDeclaration = types.FunctionDeclaration(
     name="write_file",
     description="Write a file, create it if it doesn't exist, or overwrite it if it does. Note this command does not append",
     parameters=types.Schema(
@@ -25,7 +25,7 @@ schema_write_file = types.FunctionDeclaration(
     ),
 )
 
-def write_file(working_directory, file_path, content):
+def write_file(working_directory: str, file_path, content: str) -> str:
     '''
     Docstring for write_file
     A function to write content to a file in working directory named file_path

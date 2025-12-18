@@ -10,7 +10,7 @@ from google.genai import types
 
 
 
-schema_get_files_info = types.FunctionDeclaration(
+schema_get_files_info: types.FunctionDeclaration = types.FunctionDeclaration(
     name="get_files_info",
     description="Lists files in the specified directory along with their sizes, constrained to the working directory.",
     parameters=types.Schema(
@@ -27,7 +27,7 @@ schema_get_files_info = types.FunctionDeclaration(
 
 
 
-def get_files_info(working_directory, directory="."):
+def get_files_info(working_directory: str, directory: str=".") -> str:
     '''
     A function to gather the contents of a directory
     Returns: String with contents of the directory or Error

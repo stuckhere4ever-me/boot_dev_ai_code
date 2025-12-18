@@ -9,7 +9,7 @@ import config
 
 
 
-schema_get_file_content = types.FunctionDeclaration(
+schema_get_file_content: types.FunctionDeclaration = types.FunctionDeclaration(
     name="get_file_content",
     description="Lists the contents of specificed file, constrained to the working directory. Files will be Truncated at 10k characters",
     parameters=types.Schema(
@@ -24,7 +24,7 @@ schema_get_file_content = types.FunctionDeclaration(
     ),
 )
 
-def get_file_content(working_directory, file_path):
+def get_file_content(working_directory: str, file_path:str) -> str: 
     '''
     A function to gather the contents of the file
     Returns: String with contents of first 10k characters in file or Error:

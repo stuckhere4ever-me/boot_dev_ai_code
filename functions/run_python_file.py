@@ -10,10 +10,11 @@ import sys
 
 from google.genai import types
 from pathlib import Path
+from typing import Sequence
 
 
 
-schema_run_python_file = types.FunctionDeclaration(
+schema_run_python_file: types.FunctionCall = types.FunctionDeclaration(
     name="run_python_file",
     description="Run a python program based at file_path.  It will only work if the file ends in .py.  It can be passed a list of arguments.",
     parameters=types.Schema(
@@ -33,7 +34,7 @@ schema_run_python_file = types.FunctionDeclaration(
     ),
 )
 
-def run_python_file(working_directory, file_path, args=None):
+def run_python_file(working_directory: str, file_path, args: Sequence[str] | None=None) -> str:
     '''
     A function to run a python program
     Returns: A string with (Process Exit Code, STDOUT, STDERR) contained or a variety of relevant errors
