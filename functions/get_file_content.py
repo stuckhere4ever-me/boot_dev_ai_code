@@ -1,3 +1,8 @@
+"""
+All of the relevant information with regards to the get_file_content function.
+This function will capture the contents of the file.
+"""
+
 from pathlib import Path
 from google.genai import types
 import config
@@ -15,11 +20,18 @@ schema_get_file_content = types.FunctionDeclaration(
                 description="The file path that we are going to gather contents for.",
             ),
         },
+        required=["file_path"],
     ),
 )
 
 def get_file_content(working_directory, file_path):
+    '''
+    A function to gather the contents of the file
+    Returns: String with contents of first 10k characters in file or Error:
     
+    :param working_directory: The directory we are working from
+    :param file_path: The file path of the file we want to read
+    '''
     try:
         base = Path(working_directory).resolve()
         target = (base / file_path).resolve(strict=False)

@@ -1,3 +1,7 @@
+"""
+Registry for all functions used as tools by the LLM 
+"""
+
 from functions.get_files_info import schema_get_files_info, get_files_info
 from functions.get_file_content import schema_get_file_content, get_file_content
 from functions.run_python_file import schema_run_python_file, run_python_file
@@ -11,7 +15,13 @@ TOOL_REGISTRY = [
 ]
 
 def declarations():
+    '''
+    Returns the schemas for any written functions
+    '''
     return [schema for schema, fn in TOOL_REGISTRY]
 
 def dispatch():
+    '''
+    Returns a dictionary containing {function_name: fn}
+    '''
     return {schema.name: fn for schema, fn in TOOL_REGISTRY}

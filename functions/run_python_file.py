@@ -1,10 +1,17 @@
-from pathlib import Path
+"""
+All of the relevant information with regards to the run_python_file function.
+This function will run a python program with presented arguments 
+"""
+
+
 import subprocess
+import config
 import sys
 
 from google.genai import types
+from pathlib import Path
 
-import config
+
 
 schema_run_python_file = types.FunctionDeclaration(
     name="run_python_file",
@@ -27,6 +34,14 @@ schema_run_python_file = types.FunctionDeclaration(
 )
 
 def run_python_file(working_directory, file_path, args=None):
+    '''
+    A function to run a python program
+    Returns: A string with (Process Exit Code, STDOUT, STDERR) contained or a variety of relevant errors
+    
+    :param working_directory: The base of hte project
+    :param file_path: the path of the python program we want to run
+    :param args: arguments being passed to it 
+    '''
     try:
         base = Path(working_directory).resolve()
         target = (base / file_path).resolve(strict=False)

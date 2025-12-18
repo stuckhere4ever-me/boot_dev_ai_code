@@ -1,3 +1,7 @@
+"""
+The overall system prompt
+"""
+
 system_prompt = """
 You are a helpful AI coding agent.
 

@@ -1,72 +1,28 @@
-##################################
-# Raza Ali                       #
-# Boot.Dev - AI Agent Project!   #
-# main.py                        #
-##################################
-
-# This file acts as the entry point to the overall program.  It is educationary in nature, so there will be some weird things
-# in each revision that I will likely change out.  I am in the process of learning python and relearning development so lets
-# see how badly I can mess things up.
-
-### Project Description - Write a primitive AI Coding agent which utilizes gemini's flash model to re-write bad code
-### Key Learning Concepts - os / sys commands, functional programming, a little bit of LLM, documentation
-
-####### NOTES #########
-# I will eventually write an md file for this project
-# All filenames, function names, variable names (except constants) are in snake_case
-#######################
-
-###### IMPORTS #######
-# All of these are external modules
-# os - for all OS level commands like file paths and enviornments
-# copy - for dictionary deepcopy
-# argparse - lets me take command line arguments
-# dotenv - lets me set isolated .env files for just this project
-# genai - The gemini library
-# types - allows me to utilize the Content type as a message to the LLM
-#
-#######################
+"""
+CLI Entry point for Gemini based coding agent
+Reads GEMINI_API_KEY, runs tool loop, returns final response
+"""
 
 import os
 import copy  
 import argparse
-from dotenv import load_dotenv
-from google import genai
-from google.genai import types
-
-###### IMPORTS #######
-# All of these are custom built modules
-# prompts - contains my system prompt
-# get_files_info - contains the functions that will list directory information
-# get_file_content - contains the functions that get file content
-# run_python_files - contains the functions run python files
-# write_files - contains the functions that write files to the filesystem
-#######################
-
-from prompts import system_prompt
-# from functions.get_files_info import schema_get_files_info, get_files_info
-# from functions.get_file_content import schema_get_file_content, get_file_content
-# from functions.run_python_file import schema_run_python_file, run_python_file
-# from functions.write_file import schema_write_file, write_file
 import config
 import tool_registry
 
-### Dictionary - my_funcs
-### These are the functions that are available to us to send to Gemini
-
-# my_funcs = {
-#     "get_files_info": get_files_info,
-#     "get_file_content": get_file_content,
-#     "run_python_file": run_python_file,
-#     "write_file": write_file,
-# }
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
+from prompts import system_prompt
 
 my_funcs = tool_registry.dispatch()
 
-### Function - build_client ###
-### This function sets up the enviornment and returns a client.
-
 def build_client():
+    '''
+    requires env variable GEMINI_API_KEY
+    Returns a client that can make Gemini calls
+    Raises: Runtime Error if API Key not found
+    '''
+
     load_dotenv()
     api_key = os.environ.get(config.API_KEY_LOCATION)
     if api_key is None:
@@ -76,15 +32,20 @@ def build_client():
     return client
 
 
-### Function - call_function ###
-### This function will act as a worker and take the information that is provided by the gemini response and use it to call the requested functions
 
 def call_function(function_call_part, verbose=False):
+    '''
+    Function that takes an instruction from LLM and will execute it
+    Constraint: We do not trust the model to detemrine working directory, so we inject it.
+    
+    :param function_call_part: Parts of the funciton call returned from Gemini
+    :param verbose: Boolean - Determines if extra output is needed
+    '''
     function_name = function_call_part.name
     function_args = copy.deepcopy(function_call_part.args)
 
 
-    # This will return a response that basically says you gave me something you weren't supposed to
+    # This will return a response that basically says LLM gave me something it was not supoposed to
     if function_name not in my_funcs:
         return types.Content(
             role="tool",
@@ -96,7 +57,7 @@ def call_function(function_call_part, verbose=False):
             ],
         )
 
-    # func_to_run is a function based on what is returned by the LLM.  We need to give it a working directory.  I used the deepcopy just in case function_call_part.args had weird behavior
+    # Inject sandboxed working directory before executing tool
     func_to_run = my_funcs[function_name]
     function_args['working_directory'] = config.WORKING_DIR
     function_result = func_to_run(**function_args)
@@ -119,13 +80,13 @@ def call_function(function_call_part, verbose=False):
     )
 
 
-### Main ###
-# Program entry point #
 def main():
-    
-    # Gather all the arguments - This needs to turn into its own function later.
-    # I also really dislike how much I have to hard code stuff
-    # Potential function will build out a dictionary with a bunch of information (description, initial prompt, is_verbose, etc)
+    '''
+    Run will send the user prompt to Gemini and complete actions based on LLM response
+    Constraint: LLM will run no more than config.MAX_ITERATIONS times.
+    CLI takes two arguments: user_prompt: Required.  What we want the LLM to do.
+    verbose: If set will put extra output to the console
+    '''
 
     parser = argparse.ArgumentParser(description="Chatbot")
     parser.add_argument("user_prompt", type=str, help="User Prompt")
@@ -146,11 +107,10 @@ def main():
     
     if args.verbose:
         print(f"User prompt: {prompt}")
-        print(f"Prompt tokens: {prompt_tokens}")
-        print(f"Response tokens: {response_tokens}")
 
     for _ in range (config.MAX_ITERATIONS):
-    
+
+        # Messages are never reset, they include full history every time so that LLM can see all prior information
         response_list = []
         response = client.models.generate_content(
             model=config.MODEL, 
@@ -163,16 +123,18 @@ def main():
         if metadata is None:
             raise RuntimeError ("--Failed API Call --")
 
+        # Append candidates prior to function calls in case there are multiple reponses that may come back         
         for candidate in response.candidates:
             messages.append(candidate.content)
+
 
         prompt_tokens = metadata.prompt_token_count
         response_tokens = metadata.candidates_token_count
 
-        # I am certain I can use a decorator to add a logger of sorts that will only log if verbose is set.
-        # Maybe I can build out a log that drops into a json file when i'm done, similar to what they did for asteroids
+        if args.verbose:
+            print(f"Prompt tokens: {prompt_tokens}")
+            print(f"Response tokens: {response_tokens}")
 
-    
         if response.function_calls:
             for function_call_part in response.function_calls:
                 function_call_result = call_function(function_call_part, verbose=args.verbose)

@@ -1,3 +1,7 @@
+"""
+Constants that are needed as part of the program
+"""
+
 API_KEY_LOCATION = "GEMINI_API_KEY"
 WORKING_DIR = "./calculator"
 MAX_ITERATIONS = 20

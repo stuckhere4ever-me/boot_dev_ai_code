@@ -1,7 +1,8 @@
+"""
+All of the relevant information with regards to the write_file function.
+This function will write content of a file to a directory
+"""
 from pathlib import Path
-import os
-
-
 from google.genai import types
 
 
@@ -20,10 +21,20 @@ schema_write_file = types.FunctionDeclaration(
                 description="The content to write to the file.",
             ),
         },
+        required=["file_path", "content"],
     ),
 )
 
 def write_file(working_directory, file_path, content):
+    '''
+    Docstring for write_file
+    A function to write content to a file in working directory named file_path
+    Returns: Successfully wrote to {file_path} ({num_characters} characters written)
+    :param working_directory: The base of our working area
+    :param file_path: The relative path of the file we want to write
+    :param content: The content we want to write to the file
+
+    '''
     try:
         base = Path(working_directory).resolve()
         target = (base / file_path).resolve(strict=False)
@@ -34,7 +45,7 @@ def write_file(working_directory, file_path, content):
         if target.is_dir():
             return f'Error: Cannot write to "{file_path}" as it is a directory'
     
-        os.makedirs(target.parent, exist_ok=True)
+        target.parent.mkdir(parents=True, exist_ok=True)
 
         with open(target, "w", encoding='utf-8') as f:
             f.write(content)
